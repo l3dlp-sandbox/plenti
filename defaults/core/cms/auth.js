@@ -19,10 +19,22 @@ if (provider === "gitea" || provider === "forgejo") {
     access_token_endpoint = "/login/oauth/access_token";
 }
 
+// Optional endpoint overrides (env.cms.authorizationUrl / accessTokenUrl). When an
+// override is absent (empty string), fall back to the original derivation —
+// repoUrl.origin + the provider's default path — so existing sites are unchanged.
+// This lets the OAuth token exchange be routed through a same-origin proxy (e.g. when
+// the editor runs on a custom domain) while OAuth authorization can stay a top-level
+// navigation to the git host's canonical origin.
+const authorizationUrl = env.cms.authorizationUrl || repoUrl.origin + authorization_endpoint;
+const accessTokenUrl = env.cms.accessTokenUrl || repoUrl.origin + access_token_endpoint;
+
 const settings = {
     provider: provider,
     authorization_endpoint: authorization_endpoint,
     access_token_endpoint: access_token_endpoint,
+    // Fully-resolved, override-aware endpoint URLs (used in place of `server + endpoint`).
+    authorizationUrl: authorizationUrl,
+    accessTokenUrl: accessTokenUrl,
     server: repoUrl.origin,
     group: repoUrl.pathname.split('/')[1],
     repository: repoUrl.pathname.split('/')[2],
@@ -123,21 +135,21 @@ const requestAuthCode = async () => {
     codeVerifierStore.set(generateString());
     const codeChallenge = await hash(codeVerifier);
 
-    const { authorization_endpoint, server, redirectUrl, appId } = settings;
-    window.location.href = server + authorization_endpoint
-        + "?client_id=" + encodeURIComponent(appId) 
+    const { authorizationUrl, redirectUrl, appId } = settings;
+    window.location.href = authorizationUrl
+        + "?client_id=" + encodeURIComponent(appId)
         + "&redirect_uri=" + encodeURIComponent(redirectUrl)
         + "&response_type=code"
-        + "&state=" + encodeURIComponent(state) 
-        + "&code_challenge=" + encodeURIComponent(codeChallenge) 
+        + "&state=" + encodeURIComponent(state)
+        + "&code_challenge=" + encodeURIComponent(codeChallenge)
         + "&code_challenge_method=S256";
 };
 
 const requestAccessToken = async code => {
-    const { access_token_endpoint, server, redirectUrl, appId } = settings;
-    const response = await fetch(server + access_token_endpoint
-        + "?client_id=" + encodeURIComponent(appId) 
-        + "&code=" + encodeURIComponent(code) 
+    const { accessTokenUrl, redirectUrl, appId } = settings;
+    const response = await fetch(accessTokenUrl
+        + "?client_id=" + encodeURIComponent(appId)
+        + "&code=" + encodeURIComponent(code)
         + "&grant_type=authorization_code"
         + "&redirect_uri=" + encodeURIComponent(redirectUrl)
         + "&code_verifier=" + encodeURIComponent(codeVerifier),
@@ -156,11 +168,13 @@ const requestAccessToken = async code => {
 };
 
 const requestRefreshToken = async () => {
-    const { access_token_endpoint, server, redirectUrl, appId } = settings;
+    const { accessTokenUrl, redirectUrl, appId } = settings;
     if (!codeVerifier) {
         throw new Error("Code verifier not saved to session storage");
     }
-    const response = await fetch(server + access_token_endpoint 
+    // Same override-aware token endpoint as the initial code exchange, so a proxied
+    // token URL applies to refresh too (otherwise refresh would go cross-origin).
+    const response = await fetch(accessTokenUrl
         + "?client_id=" + encodeURIComponent(appId)
         + "&refresh_token=" + encodeURIComponent(tokens.refresh_token)
         + "&grant_type=refresh_token"

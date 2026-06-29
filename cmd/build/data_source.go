@@ -75,6 +75,10 @@ type cms struct {
 	redirectUrl string
 	appId       string
 	branch      string
+	// Optional endpoint overrides (empty = derive from repo, as before).
+	authorizationUrl string
+	accessTokenUrl   string
+	apiBaseUrl       string
 }
 
 // DataSource builds json list from "content/" directory.
@@ -105,11 +109,14 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 		entrypointJS:   siteConfig.EntryPointJS,
 		sitevars:       string(sitevarsJSON),
 		cms: cms{
-			provider:    siteConfig.CMS.Provider,
-			repo:        siteConfig.CMS.Repo,
-			redirectUrl: siteConfig.CMS.RedirectUrl,
-			appId:       siteConfig.CMS.AppId,
-			branch:      siteConfig.CMS.Branch,
+			provider:         siteConfig.CMS.Provider,
+			repo:             siteConfig.CMS.Repo,
+			redirectUrl:      siteConfig.CMS.RedirectUrl,
+			appId:            siteConfig.CMS.AppId,
+			branch:           siteConfig.CMS.Branch,
+			authorizationUrl: siteConfig.CMS.AuthorizationUrl,
+			accessTokenUrl:   siteConfig.CMS.AccessTokenUrl,
+			apiBaseUrl:       siteConfig.CMS.ApiBaseUrl,
 		},
 	}
 
@@ -137,6 +144,9 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 		"', redirectUrl: '" + env.cms.redirectUrl +
 		"', appId: '" + env.cms.appId +
 		"', branch: '" + env.cms.branch +
+		"', authorizationUrl: '" + env.cms.authorizationUrl +
+		"', accessTokenUrl: '" + env.cms.accessTokenUrl +
+		"', apiBaseUrl: '" + env.cms.apiBaseUrl +
 		"' } };"
 
 	// Start the new content.js file.

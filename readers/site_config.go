@@ -32,6 +32,14 @@ type SiteConfig struct {
 		RedirectUrl string `json:"redirect_url"`
 		AppId       string `json:"app_id"`
 		Branch      string `json:"branch"`
+		// Optional endpoint overrides. When empty, each endpoint is derived from
+		// "repo" exactly as before (origin + the provider's default path), so existing
+		// sites are unaffected. Set these to route OAuth token exchange and/or the
+		// provider API through a same-origin proxy while OAuth authorization stays a
+		// top-level navigation to the git host's canonical origin.
+		AuthorizationUrl string `json:"authorization_url"`
+		AccessTokenUrl   string `json:"access_token_url"`
+		ApiBaseUrl       string `json:"api_base_url"`
 	} `json:"cms"`
 }
 

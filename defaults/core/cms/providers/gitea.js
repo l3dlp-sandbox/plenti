@@ -5,7 +5,10 @@ import evaluateRoute from '../route_eval.js';
 const repoUrl = makeUrl(env.cms.repo);
 const owner = repoUrl.pathname.split('/')[1];
 const repo = repoUrl.pathname.split('/')[2];
-const apiBaseUrl = `${repoUrl.origin}/api/v1`;
+// Optional override (env.cms.apiBaseUrl). Empty falls back to the original derivation
+// (repoUrl.origin + /api/v1), so existing sites are unchanged; set it to route the
+// repository API through a same-origin proxy.
+const apiBaseUrl = env.cms.apiBaseUrl || `${repoUrl.origin}/api/v1`;
 
 const capitalizeFirstLetter = string => {
   return string.charAt(0).toUpperCase() + string.slice(1);
